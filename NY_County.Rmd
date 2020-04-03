@@ -1,0 +1,140 @@
+---
+title: "New York County, NY"
+author: "Patrick Kelly"
+date: "4/3/2020"
+output: html_document
+---
+
+[Click Here](https://github.com/nytimes/covid-19-data)"NY times US County and State Data"
+
+```{r, echo=FALSE,message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(ggthemes)
+library(plotly)
+```
+
+### New York City, NY
+
+The first case of COVID-19 was recorded on March 1, 2020. Now 32 days later on April 2, the total has climbed to 51,810. The first death occurred on March 14, with the tally now reaching 1562. Deaths per case are rising and stand at 3.0%. Cases per 100,000 have reached 606. Deaths per 100,000 are at 18.
+
+The total population of the five buroughs of New York City is estimated to be 8,550,971.
+
+```{r, echo=FALSE}
+data<- read.csv("https://raw.github.com/nytimes/covid-19-data/master/us-counties.csv",header = FALSE, stringsAsFactors = FALSE)
+```
+
+```{r, echo=FALSE}
+NYCity <- filter(data,V2 =="New York City"& V3 =="New York")
+NYCity <- NYCity[-c(2:4)]
+names(NYCity) <-c("Date","Cases","Deaths")
+NYCity$Date <- as.Date(NYCity$Date)
+NYCity$Cases <- as.integer(NYCity$Cases)
+NYCity$Deaths <- as.integer(NYCity$Deaths)
+```
+
+<!-- ### Add Variables -->
+
+```{r, echo=FALSE}
+Bor_pop <- c(1638281,1446788,2648452,
+             2330295,487155)
+Pop <- sum(Bor_pop)
+Pop_100000 <- Pop/1e+5
+NYCity$Case_Rate <- round(NYCity$Cases/Pop_100000,0)
+NYCity$Death_Rate <- round(NYCity$Deaths/Pop_100000,0)
+NYCity$Deaths_per_Case <- round(NYCity$Deaths/NYCity$Cases,3)*100
+NYCity$Day <- c(1:nrow(NYCity))
+# write.csv(NYCity,"NYCity_County.csv",row.names = FALSE)
+```
+
+```{r, echo=FALSE}
+total_case <- tail(NYCity$Cases,1)
+total_death <- tail(NYCity$Deaths,1)
+total_dpc <- tail(NYCity$Deaths_per_Case,1)
+total_cr <- tail(NYCity$Case_Rate,1)
+total_dr <- tail(NYCity$Death_Rate,1)
+```
+
+```{r, echo=FALSE}
+p <- ggplot(NYCity, aes(x = Day,y=Cases)) +
+  geom_line(group=1, color="red") +
+  geom_point() +
+  labs(title = "COVID-19 Cases: New York City, NY",
+  subtitle = paste("April 2, 2020 - Total =", total_case)) +
+theme(plot.title = element_text(size = 20))+ 
+  xlab("Dates")+
+  ylab("Cases")+
+  xlim(c(0,35)) +
+  ylim(c(0,60000)) +
+  theme_clean()
+p
+```
+
+```{r, echo=FALSE}
+p <- ggplot(NYCity, aes(x = Day,y=Deaths_per_Case)) +
+   geom_line(group=1, color="red") +
+   geom_point() +
+  labs(title = "COVID-19 Deaths per Case (Percent)",
+  subtitle = paste("April 2, 2020 - Total =", total_dpc)) +
+theme(plot.title = element_text(size = 20))+ 
+  xlab("Dates")+
+   ylab("Deaths/Case (%)")+
+  xlim(c(0,35)) +
+ylim(c(0,4)) +
+  theme_clean() 
+#p <- ggplotly(p)
+p
+```
+
+```{r, echo=FALSE}
+library(reshape2)
+NYCity2 <- select(NYCity, Cases, Deaths,Day)
+NYCity_long<-melt(NYCity2,id="Day") 
+
+p <- ggplot(NYCity_long, aes(x=Day, y=log10(value), fill=variable, colour=variable))+ 
+  geom_line(stat='identity', size=0.5)+ 
+  geom_point(stat='identity', size=2)+
+labs(title = "COVID-19 Total Cases (Log10 Scale) and Total Deaths",
+  subtitle = paste("April 2, 2020 -   Total Cases =",total_case,"Total Deaths =", total_death)) +
+theme_clean() +
+  scale_color_manual(values=c("blue", "red")) +
+  scale_y_continuous("Log10 Cases", sec.axis = 
+  sec_axis(~ . *490, name = "Deaths"))
+p
+```
+
+```{r,echo=FALSE}
+p <- ggplot(NYCity, aes(x = Day,y=Case_Rate)) +
+   geom_line(group=1, color="red") +
+   geom_point() +
+  labs(title = "COVID-19 Cases per 100,000",
+  subtitle = paste("April 2, 2020 - Total =", total_cr)) +
+theme(plot.title = element_text(size = 20))+ 
+  xlab("Dates")+
+  ylab("Cases/100,000")+
+xlim(c(0,35)) +
+ylim(c(0,700)) +
+  theme_clean()
+#p <- ggplotly(p)
+p
+```
+
+```{r,echo=FALSE}
+p <- ggplot(NYCity, aes(x = Day,y=Death_Rate)) +
+   geom_line(group=1, color="red") +
+   geom_point() +
+labs(title = "COVID-19 Deaths per 100,000",
+  subtitle = paste("April 2, 2020 - Total =", total_dr)) +
+ theme(plot.title = element_text(size = 20))+ 
+  xlab("Dates")+
+   ylab("Deaths/100,000")+
+xlim(c(0,35)) +
+ylim(c(0,20)) +
+  theme_clean() 
+# p <- ggplotly(p)
+p
+```
+
+
+
+
